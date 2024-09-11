@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!--
+        CONSOLE ：表示当前的日志信息是可以输出到控制台的。
+    -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <!--输出流对象 默认 System.out 改为 System.err-->
+        <target>System.out</target>
+        <encoder>
+            <!--格式化输出：%d表示日期，%thread表示线程名，%-5level：级别从左显示5个字符宽度
+                %msg：日志消息，%n是换行符-->
+            <pattern>[%-5level] %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!--
+        1、控制日志的输出情况：如，开启日志，取消日志
+    -->
+    <root level="info">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+
+
+</configuration>

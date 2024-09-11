@@ -1,0 +1,270 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>io.github.yajuhua</groupId>
+  <artifactId>iv-dl</artifactId>
+  <version>0.0.1</version>
+  <name>${project.artifactId}</name>
+  <url>https://github.com/yajuhua/invidious-dlj</url>
+  <description>invidious downloader</description>
+
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>17</maven.compiler.source>
+    <maven.compiler.target>17</maven.compiler.target>
+    <maven.build.timestamp.format>yyyy-MM-dd</maven.build.timestamp.format>
+    <current.time>${maven.build.timestamp}</current.time>
+    <!-- GraalVM Native Image 有关配置 - 开始 -->
+    <native.maven.plugin.version>0.10.1</native.maven.plugin.version> <!-- Native Image 插件版本号 可以在这里找到最新的版本和更改日志：https://graalvm.github.io/native-build-tools/latest/index.html#changelog -->
+    <!-- Native Image 的名字，也就是编译后最终的可执行文件的名称。对于这个示例，最后输出的 Windows 可执行文件名为 peerbanhelper-binary.exe -->
+    <imageName>${project.name}</imageName>
+    <!-- 主类名，也就是程序执行入口 -->
+    <mainClass>io.github.yajuhua.invidious.dlj.Application</mainClass>
+    <!-- GraalVM Native Image 有关配置 - 结束 -->
+  </properties>
+
+
+  <repositories>
+    <repository>
+      <id>jitpack.io</id>
+      <url>https://jitpack.io</url>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <dependency>
+      <groupId>io.github.yajuhua</groupId>
+      <artifactId>invidious-wrapper</artifactId>
+      <version>0.1.1</version>
+      <exclusions>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-simple</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>org.slf4j</groupId>
+          <artifactId>slf4j-api</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!--slf4j日志门面-->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.26</version>
+    </dependency>
+
+    <!--logback日志实现-->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.2.3</version>
+    </dependency>
+
+    <!--        一定要有logback-core 这个是基础-->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+      <version>1.2.3</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.testng</groupId>
+      <artifactId>testng</artifactId>
+      <version>7.1.0</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+      <version>2.13.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.projectlombok</groupId>
+      <artifactId>lombok</artifactId>
+      <version>1.18.30</version>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>native-unix-like</id> <!-- Linux, macOS 配置 -->
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <version>${native.maven.plugin.version}</version>
+            <extensions>true</extensions>
+            <executions>
+              <execution>
+                <id>build-native</id>
+                <goals>
+                  <goal>compile-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+            <configuration>
+              <skip>false</skip>
+              <imageName>${imageName}</imageName>
+              <fallback>false</fallback>
+              <!-- 指定构建参数，这些参数会在编译时传递给 native-image 自己和编译器 -->
+              <buildArgs>
+                <!-- 固定使用 UTF-8 编码，避免后续为了编码问题焦头烂额 -->
+                <buildArg>-J-Dfile.encoding=UTF-8</buildArg>
+                <buildArg>-J-Dstdout.encoding=UTF-8</buildArg>
+                <buildArg>-J-Dstderr.encoding=UTF-8</buildArg>
+                <buildArg>-J-Dconsole.encoding=UTF-8</buildArg>
+                <!-- 固定使用英语（美国）语言，消除 java.util.logger 等支持本地化组件会返回不同文本的问题，Native Image 打包时如果没有使用对应语言调试，最终打包的镜像会缺少本地化文本  -->
+                <buildArg>-J-Duser.language=en</buildArg>
+                <buildArg>-J-Duser.region=US</buildArg>
+                <buildArg>--verbose</buildArg>
+                <!-- 开放模块访问 -->
+                <buildArg>--add-opens=java.base/java.nio=ALL-UNNAMED</buildArg>
+                <buildArg>--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</buildArg>
+                <buildArg>--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED</buildArg>
+                <!-- 允许 GraalVM Native Image 在运行时报告不支持的元素，这样就可以根据错误内容调整配置文件 -->
+                <buildArg>--report-unsupported-elements-at-runtime</buildArg>
+                <!-- 允许缺失依赖的代码加入编译，参见 https://goldsubmarine.github.io/2022/01/02/graalvm-%E9%9D%99%E6%80%81%E7%BC%96%E8%AF%91/#%E5%91%BD%E4%BB%A4%E8%A1%8C%E6%A8%A1%E5%BC%8F%E7%BC%96%E8%AF%91 -->
+                <buildArg>--allow-incomplete-classpath</buildArg>
+                <!-- 按需添加需要支持的协议，方便控制 Native Image 的大小，参见 https://www.graalvm.org/22.1/reference-manual/native-image/URLProtocols -->
+                <buildArg>--enable-url-protocols=http,https</buildArg>
+                <!-- Native Image 将会使用的 GC 垃圾回收器，CE 社区版没的选择，只能用 serial -->
+                <buildArg>--gc=serial</buildArg>
+                <!-- 启用打印构建时的错误堆栈，这个可以不加，需要的时候控制台会提示你打开此选项 -->
+                <buildArg>-H:+ReportExceptionStackTraces</buildArg>
+                <!-- 这是重中之重，指定 Native Image 编译使用的配置文件路径，稍后的文章会介绍如何创建这些配置文件 —— 它们几乎都是自动化的 -->
+                <buildArg>-H:ConfigurationFileDirectories=./src/main/resources/META-INF/native-image</buildArg>
+                <!-- 在编译时强制初始化这些类，有助于解决编译完了之后报错 NoClassDefFoundError 的问题 -->
+                <buildArg>--initialize-at-build-time=org.slf4j.helpers.NOPLoggerFactory</buildArg>
+                <buildArg>--initialize-at-build-time=org.slf4j.helpers.NOP_FallbackServiceProvider</buildArg>
+                <buildArg>--initialize-at-build-time=org.slf4j.helpers.SubstituteServiceProvider</buildArg>
+                <buildArg>--initialize-at-build-time=org.slf4j.helpers.SubstituteLoggerFactory</buildArg>
+                <buildArg>--initialize-at-build-time=java.util.logging.ConsoleHandler</buildArg>
+                <buildArg>--initialize-at-build-time=java.util.logging.FileHandler</buildArg>
+                <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+              </buildArgs>
+            </configuration>
+          </plugin>
+        </plugins>
+        <resources>
+          <resource>
+            <directory>src/main/resources</directory>
+            <filtering>true</filtering>
+          </resource>
+        </resources>
+      </build>
+    </profile>
+
+    <profile>
+      <id>native-windows</id> <!-- Windows 配置，大部分都和上面的相同 -->
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.graalvm.buildtools</groupId>
+            <artifactId>native-maven-plugin</artifactId>
+            <version>${native.maven.plugin.version}</version>
+            <extensions>true</extensions>
+            <executions>
+              <execution>
+                <id>build-native</id>
+                <goals>
+                  <goal>compile-no-fork</goal>
+                </goals>
+                <phase>package</phase>
+              </execution>
+            </executions>
+            <configuration>
+              <skip>false</skip>
+              <imageName>${imageName}</imageName>
+              <fallback>false</fallback>
+              <buildArgs>
+                <!-- 这是 Windows NT 平台编译器的独有编译参数，SUBSYSTEM 后面可以跟多个参数，WINDOWS 代表窗口程序，而 CONSOLE 会打开一个黑色的控制台来显示日志等信息。支持的参数可以见微软的文档：https://learn.microsoft.com/zh-cn/cpp/build/reference/subsystem-specify-subsystem?view=msvc-170 -->
+                <buildArg>-H:NativeLinkerOption=/SUBSYSTEM:CONSOLE</buildArg>
+                <buildArg>-J-Dfile.encoding=UTF-8</buildArg>
+                <buildArg>-J-Dstdout.encoding=UTF-8</buildArg>
+                <buildArg>-J-Dstderr.encoding=UTF-8</buildArg>
+                <buildArg>-J-Dconsole.encoding=UTF-8</buildArg>
+                <buildArg>-J-Duser.language=en</buildArg>
+                <buildArg>-J-Duser.region=US</buildArg>
+                <buildArg>--verbose</buildArg>
+                <buildArg>--add-opens=java.base/java.nio=ALL-UNNAMED</buildArg>
+                <buildArg>--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</buildArg>
+                <buildArg>--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED</buildArg>
+                <buildArg>--report-unsupported-elements-at-runtime</buildArg>
+                <buildArg>--allow-incomplete-classpath</buildArg>
+                <buildArg>--enable-url-protocols=http,https</buildArg>
+                <buildArg>-H:+ReportExceptionStackTraces</buildArg>
+                <buildArg>--gc=serial</buildArg>
+                <buildArg>-H:ConfigurationFileDirectories=./src/main/resources/META-INF/native-image</buildArg>
+                <buildArg>--initialize-at-build-time=org.slf4j.helpers.NOPLoggerFactory</buildArg>
+                <buildArg>--initialize-at-build-time=org.slf4j.helpers.NOP_FallbackServiceProvider</buildArg>
+                <buildArg>--initialize-at-build-time=org.slf4j.helpers.SubstituteServiceProvider</buildArg>
+                <buildArg>--initialize-at-build-time=org.slf4j.helpers.SubstituteLoggerFactory</buildArg>
+                <buildArg>--initialize-at-build-time=java.util.logging.ConsoleHandler</buildArg>
+                <buildArg>--initialize-at-build-time=java.util.logging.FileHandler</buildArg>
+                <buildArg>-H:+UnlockExperimentalVMOptions</buildArg>
+              </buildArgs>
+            </configuration>
+          </plugin>
+        </plugins>
+        <resources>
+          <resource>
+            <directory>src/main/resources</directory>
+            <filtering>true</filtering>
+          </resource>
+        </resources>
+      </build>
+    </profile>
+
+    <profile>
+      <id>jar-with-dependencies</id> <!-- 打包所有依赖 -->
+      <build>
+        <plugins>
+          <!-- Maven Assembly Plugin -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <version>2.4.1</version>
+            <configuration>
+              <!-- get all project dependencies -->
+              <descriptorRefs>
+                <descriptorRef>jar-with-dependencies</descriptorRef>
+              </descriptorRefs>
+              <finalName>${project.name}</finalName>
+              <!--  文件名中去掉 jar-with-dependencies   -->
+              <appendAssemblyId>false</appendAssemblyId>
+              <archive>
+                <manifest>
+                  <!-- 指定程序入口类 -->
+                  <mainClass>io.github.yajuhua.invidious.dlj.Application</mainClass>
+                </manifest>
+              </archive>
+            </configuration>
+            <executions>
+              <execution>
+                <id>make-assembly</id>
+                <!-- bind to the packaging phase -->
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+
+        <resources>
+          <resource>
+            <directory>src/main/resources</directory>
+            <filtering>true</filtering>
+          </resource>
+        </resources>
+      </build>
+    </profile>
+  </profiles>
+</project>
