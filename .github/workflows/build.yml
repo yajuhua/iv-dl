@@ -62,6 +62,11 @@ on:
         required: true
         default: '23.0.2'
         type: string
+      artifacts-file:
+        description: 'artifacts-file'
+        required: true
+        default: '*'
+        type: string
 
 jobs:
   # 新标签
@@ -361,7 +366,7 @@ jobs:
     if: ${{ inputs.release == 'true' }}  # 在这里设置条件
     steps:
       # 下载 newTag变量
-      - name: Download native image conf
+      - name: Download newTag
         uses: actions/download-artifact@v3
         with:
           name: newTag
@@ -382,6 +387,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v3
         with:
+          name: conf
           path: ./artifacts/conf
 
       # 将编译配置文件打包成zip
@@ -397,5 +403,5 @@ jobs:
           prerelease: ${{ inputs.prerelease }}
           title: "${{ env.RELEASE_TAG  }}"
           files: |
-            artifacts/*.zip
+            ${{ inputs.artifacts-file }}
             
