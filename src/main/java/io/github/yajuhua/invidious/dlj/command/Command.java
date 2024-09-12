@@ -175,6 +175,14 @@ public class Command {
             filteredArgs = argList;
         }
         filteredArgs.remove("--version");//删除版本信息选项
+
+        //自定义yt-dlp路径
+        if (hasYtDlpPath(args)){
+            filteredArgs.remove(filteredArgs.indexOf("--yt-dlp-path") + 1);
+            filteredArgs.remove("--yt-dlp-path");
+        }
+
+        //批量下载
         if (hasBatchFile(args)){
             if (filteredArgs.contains("--batch-file")){
                 filteredArgs.remove(filteredArgs.indexOf("--batch-file") + 1);
@@ -274,5 +282,36 @@ public class Command {
             }
         }
         throw new Exception("--batch-file 选项异常");
+    }
+
+    /**
+     * 打印help
+     */
+    public static void printHelp(){
+        System.out.println("--help,-h           帮助");
+        System.out.println("--version           版本信息");
+        System.out.println("--yt-dlp-path       设置yt-dlp二进制文件路径，默认'yt-dlp'");
+    }
+
+    /**
+     * 获取自定义yt-dlp路径的，如果有的话
+     * @return
+     */
+    public static String YtDlpPath(String[] args){
+        List<String> argList = toList(args);
+        if (argList.contains("--yt-dlp-path")){
+            String path = argList.get(argList.indexOf("--yt-dlp-path") + 1);
+            return path;
+        }
+        return "yt-dlp";//默认
+    }
+
+    /**
+     * 是否有自定义yt-dlp路径
+     * @param args
+     * @return
+     */
+    public static boolean hasYtDlpPath(String[] args){
+        return toList(args).contains("--yt-dlp-path");
     }
 }

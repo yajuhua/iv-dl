@@ -46,6 +46,18 @@ public class Application {
      */
     public static void main(String[] args) throws Exception {
 
+        /**
+         * 打印帮助
+         */
+        if (Command.toList(args).contains("--help") || Command.toList(args).contains("-h")){
+            Command.printHelp();
+            return;
+        }
+
+        //yt-dlp路径
+        String ytDlpPath = Command.YtDlpPath(args);
+        System.setProperty("yt-dlp",ytDlpPath);
+
         //执行测试代码
         if (Command.toList(args).contains("--test")){
             RunAllFeatForConfig.run();
@@ -57,23 +69,23 @@ public class Application {
             return;
         }
 
+        //打印各种调试信息
         if (Command.hasVerbose(args)){
-            //打印各种调试信息
             printVerbose();
         }
 
+        //设置为error级别日志
         if (Command.isIgnoreWarnLog(args)){
-            //设置为error级别日志
             ignoreWarnLog = true;
             setLogLevel(Level.ERROR);
         }
 
         log.debug(Arrays.toString(args));
 
-
+        //批量下载
         if (Command.hasBatchFile(args)){
             //获取批量下载文件中的链接，如果有的话
-            List<String> urlList = new ArrayList<>();
+            List<String> urlList;
             File batchFile = Command.getBatchFile(args);
             if (batchFile.exists()){
                 urlList = FileUtils.readLines(batchFile,"UTF-8");
@@ -88,7 +100,10 @@ public class Application {
             }
         }else {
             //下载单个
-            download(Command.toArray(Command.filterYtDlpArguments(args)));
+            List<String> argList = Command.filterYtDlpArguments(args);
+            String url = Command.getUrl(args);
+            argList.add(url);
+            download(Command.toArray(argList));
         }
     }
 
@@ -145,7 +160,8 @@ public class Application {
         FileUtils.write(tempJsonFile,gson.toJson(videoList),"UTF-8");
 
         //执行cmd命令
-        argList.add(0,"yt-dlp");
+        String execFile = System.getProperty("yt-dlp");
+        argList.add(0,execFile);
         argList.add("--load-info-json");
         argList.add(tempJsonFile.getAbsolutePath());
 
@@ -170,10 +186,7 @@ public class Application {
                 }
             }
             int waitFor = process.waitFor();
-            if (waitFor == 2){
-                log.error("请先安装yt-dlp");
-                return;
-            } else if (waitFor != 0) {
+            if (waitFor != 0) {
                 bre = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
                 while ((line = bre.readLine()) != null){
                     System.out.println(line);
@@ -181,7 +194,7 @@ public class Application {
             }
             System.out.println();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
         }finally {
             //清理临时文件
             if (tempJsonFile.exists()){
