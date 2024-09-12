@@ -226,6 +226,7 @@ public class RunAllFeatForConfig {
         playlist();
         version();
         ignoreWarnLog();
+        batchFile();
         log.info("end");
         System.exit(0);
     }
