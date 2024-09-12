@@ -211,7 +211,11 @@ public class RunAllFeatForConfig {
         urlList.add("https://www.youtube.com/watch?v=fE6XAeZfAsk");
         FileUtils.writeLines(new File("a.txt"),urlList);
         String[] args = new String[]{"--batch-file","a.txt"};
-        base(args);
+        List<String> argList = Command.filterYtDlpArguments(args);
+        for (String url : urlList) {
+            argList.add(url);
+            Application.download(Command.toArray(argList));
+        }
     }
 
     /**

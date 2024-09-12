@@ -167,7 +167,10 @@ public class Application {
                 }
             }
             int waitFor = process.waitFor();
-            if (waitFor != 0){
+            if (waitFor == 2){
+                log.error("请先安装yt-dlp");
+                return;
+            } else if (waitFor != 0) {
                 bre = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
                 while ((line = bre.readLine()) != null){
                     System.out.println(line);
