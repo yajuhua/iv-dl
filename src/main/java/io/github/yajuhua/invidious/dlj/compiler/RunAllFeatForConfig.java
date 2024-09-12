@@ -203,6 +203,18 @@ public class RunAllFeatForConfig {
     }
 
     /**
+     * 批量下载
+     */
+    public static void batchFile() throws Exception {
+        List<String> urlList = new ArrayList<>();
+        urlList.add("https://www.youtube.com/watch?v=eDqfg_LexCQ");
+        urlList.add("https://www.youtube.com/watch?v=fE6XAeZfAsk");
+        FileUtils.writeLines(new File("a.txt"),urlList);
+        String[] args = new String[]{"--batch-file","a.txt"};
+        base(args);
+    }
+
+    /**
      * 使用所有功能，用于生成编译用的配置文件
      * @throws Exception
      */
