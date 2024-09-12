@@ -159,6 +159,9 @@ public class Application {
         System.out.println("[info] generate json file: " + tempJsonFile.getAbsolutePath());
         FileUtils.write(tempJsonFile,gson.toJson(videoList),"UTF-8");
 
+        //移除下载链接
+        argList.remove(argList.size() - 1);
+
         //执行cmd命令
         String execFile = System.getProperty("yt-dlp");
         argList.add(0,execFile);
