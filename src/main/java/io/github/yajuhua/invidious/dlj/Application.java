@@ -70,22 +70,25 @@ public class Application {
 
         log.debug(Arrays.toString(args));
 
-        //获取批量下载文件中的链接，如果有的话
-        List<String> urlList = new ArrayList<>();
+
         if (Command.hasBatchFile(args)){
+            //获取批量下载文件中的链接，如果有的话
+            List<String> urlList = new ArrayList<>();
             File batchFile = Command.getBatchFile(args);
             if (batchFile.exists()){
                 urlList = FileUtils.readLines(batchFile,"UTF-8");
             }else {
                 throw new Exception("找不到文件: " + batchFile);
             }
-        }
-
-        //校验和过滤参数
-        List<String> argList = Command.filterYtDlpArguments(args);
-        for (String url : urlList) {
-            argList.add(url);
-            download(Command.toArray(argList));
+            for (String url : urlList) {
+                //校验和过滤参数
+                List<String> argList = Command.filterYtDlpArguments(args);
+                argList.add(url);
+                download(Command.toArray(argList));
+            }
+        }else {
+            //下载单个
+            download(Command.toArray(Command.filterYtDlpArguments(args)));
         }
     }
 
