@@ -28,6 +28,8 @@ public class FileUtilsTest {
         File tempDir = new File(System.getProperty("java.io.tmpdir"));
         File file = new File(tempDir,"write.txt");
         System.out.println(file);
+        String str = "测试 write\nhello";
+        FileUtils.write(file,str,"UTF-8");
         List<String> lines = FileUtils.readLines(file, "UTF-8");
         for (String line : lines) {
             System.out.println(line);
