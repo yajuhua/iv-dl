@@ -14,11 +14,14 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.Proxy;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class Application {
@@ -92,6 +95,20 @@ public class Application {
             }else {
                 throw new Exception("找不到文件: " + batchFile);
             }
+
+            //过滤不合法的链接
+            urlList = urlList.stream().filter(new Predicate<String>() {
+                @Override
+                public boolean test(String s) {
+                    try {
+                        new URL(s);
+                        return true;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                }
+            }).collect(Collectors.toList());
+
             for (String url : urlList) {
                 //校验和过滤参数
                 List<String> argList = Command.filterYtDlpArguments(args);
