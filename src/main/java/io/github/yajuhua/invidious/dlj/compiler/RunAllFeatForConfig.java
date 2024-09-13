@@ -7,9 +7,9 @@ import io.github.yajuhua.invidious.dlj.CustomDownloader;
 import io.github.yajuhua.invidious.dlj.Info;
 import io.github.yajuhua.invidious.dlj.command.Command;
 import io.github.yajuhua.invidious.dlj.pojo.Video;
+import io.github.yajuhua.invidious.dlj.utils.FileUtils;
 import io.github.yajuhua.invidious.wrapper.Invidious;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 
 import java.io.BufferedReader;
 import java.io.File;

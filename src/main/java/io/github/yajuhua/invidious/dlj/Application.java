@@ -7,9 +7,9 @@ import com.google.gson.Gson;
 import io.github.yajuhua.invidious.dlj.command.Command;
 import io.github.yajuhua.invidious.dlj.compiler.RunAllFeatForConfig;
 import io.github.yajuhua.invidious.dlj.pojo.Video;
+import io.github.yajuhua.invidious.dlj.utils.FileUtils;
 import io.github.yajuhua.invidious.wrapper.Invidious;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
