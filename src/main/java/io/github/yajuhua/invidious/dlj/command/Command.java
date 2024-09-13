@@ -1,5 +1,6 @@
 package io.github.yajuhua.invidious.dlj.command;
 
+import java.io.File;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.URL;
@@ -21,21 +22,20 @@ public class Command {
      * @return没有就返回null
      */
     public static Proxy getProxy(String[] args) throws Exception {
-        //TODO 获取系统代理
         Proxy proxy = null;
-       if (hasProxy(args)){
-           List<String> argList = toList(args);
-           String proxyStr = argList.get(argList.indexOf("--proxy") + 1);
-           URL url = new URL(proxyStr);
-           int port = url.getPort();
-           String host = url.getHost();
-           InetSocketAddress address = new InetSocketAddress(host, port);
-           if (proxyStr.startsWith("http")){
-               proxy = new Proxy(Proxy.Type.HTTP,address);
-           } else if (proxyStr.startsWith("socks5") || proxyStr.startsWith("socks")) {
-               proxy = new Proxy(Proxy.Type.HTTP,address);
-           }
-       }
+        if (hasProxy(args)){
+            List<String> argList = toList(args);
+            String proxyStr = argList.get(argList.indexOf("--proxy") + 1);
+            URL url = new URL(proxyStr);
+            int port = url.getPort();
+            String host = url.getHost();
+            InetSocketAddress address = new InetSocketAddress(host, port);
+            if (proxyStr.startsWith("http")){
+                proxy = new Proxy(Proxy.Type.HTTP,address);
+            } else if (proxyStr.startsWith("socks5") || proxyStr.startsWith("socks")) {
+                proxy = new Proxy(Proxy.Type.HTTP,address);
+            }
+        }
         return proxy;
     }
 
@@ -175,8 +175,25 @@ public class Command {
             filteredArgs = argList;
         }
         filteredArgs.remove("--version");//删除版本信息选项
-        filteredArgs.remove(filteredArgs.size() - 1);//删除下载链接
 
+        //自定义yt-dlp路径
+        if (hasYtDlpPath(args)){
+            filteredArgs.remove(filteredArgs.indexOf("--yt-dlp-path") + 1);
+            filteredArgs.remove("--yt-dlp-path");
+        }
+
+        //批量下载
+        if (hasBatchFile(args)){
+            if (filteredArgs.contains("--batch-file")){
+                filteredArgs.remove(filteredArgs.indexOf("--batch-file") + 1);
+            } else if (filteredArgs.contains("-a")) {
+                filteredArgs.remove(filteredArgs.indexOf("-a") + 1);
+            }
+            filteredArgs.remove("-a");
+            filteredArgs.remove("--batch-file");
+        }else {
+            filteredArgs.remove(filteredArgs.size() - 1);//删除下载链接
+        }
         return filteredArgs;
     }
 
@@ -194,11 +211,13 @@ public class Command {
             String regex = "https?://(?:www\\.)?[a-zA-Z0-9-]+(?:\\.[a-zA-Z]{2,})+(?:/[^\\s]*)?";
             Pattern pattern = Pattern.compile(regex);
             Matcher matcher = pattern.matcher(url);
-            if (!matcher.find()){
-                throw new RuntimeException("请输入合法链接: " + url);
-            }
-            if (!supportUrlKey.stream().anyMatch(url::contains)){
-                throw new RuntimeException("不支持该链接: " + url);
+            if (!hasBatchFile(args)){
+                if (!matcher.find()){
+                    throw new RuntimeException("请输入合法链接: " + url);
+                }
+                if (!supportUrlKey.stream().anyMatch(url::contains)){
+                    throw new RuntimeException("不支持该链接: " + url);
+                }
             }
         }else {
             throw new RuntimeException("请输入合法参数");
@@ -234,5 +253,65 @@ public class Command {
      */
     public static boolean hasVerbose(String[] args){
         return toList(args).contains("-v") || toList(args).contains("--verbose");
+    }
+
+    /**
+     * 判断是否有批量下载文件
+     * @param args
+     * @return
+     */
+    public static boolean hasBatchFile(String[] args){
+        return toList(args).contains("-a") || toList(args).contains("--batch-file");
+    }
+
+    /**
+     * 获取批量下载文件
+     * @param args
+     * @return
+     */
+    public static File getBatchFile(String[] args) throws Exception {
+        List<String> argList = toList(args);
+        String filePath;
+        if (hasBatchFile(args)){
+            if (argList.contains("-a")){
+                filePath = argList.get(argList.indexOf("-a") + 1);
+                return new File(filePath);
+            }else if (argList.contains("--batch-file")){
+                filePath = argList.get(argList.indexOf("--batch-file") + 1);
+                return new File(filePath);
+            }
+        }
+        throw new Exception("--batch-file 选项异常");
+    }
+
+    /**
+     * 打印help
+     */
+    public static void printHelp(){
+        System.out.println("--help,-h           帮助");
+        System.out.println("--version           版本信息");
+        System.out.println("--yt-dlp-path       设置yt-dlp二进制文件路径，默认'yt-dlp'");
+    }
+
+    /**
+     * 获取自定义yt-dlp路径的，如果有的话
+     * @return
+     */
+    public static String YtDlpPath(String[] args){
+        List<String> argList = toList(args);
+        if (argList.contains("--yt-dlp-path")){
+            String path = argList.get(argList.indexOf("--yt-dlp-path") + 1);
+            return path;
+        }
+        return "yt-dlp";//默认
+    }
+
+    /**
+     * 是否有自定义yt-dlp路径
+     * @param args
+     * @return
+     */
+    public static boolean hasYtDlpPath(String[] args){
+        return toList(args).contains("--yt-dlp-path");
     }
 }

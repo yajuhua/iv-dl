@@ -7,9 +7,9 @@ import io.github.yajuhua.invidious.dlj.CustomDownloader;
 import io.github.yajuhua.invidious.dlj.Info;
 import io.github.yajuhua.invidious.dlj.command.Command;
 import io.github.yajuhua.invidious.dlj.pojo.Video;
+import io.github.yajuhua.invidious.dlj.utils.FileUtils;
 import io.github.yajuhua.invidious.wrapper.Invidious;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -203,6 +203,22 @@ public class RunAllFeatForConfig {
     }
 
     /**
+     * 批量下载
+     */
+    public static void batchFile() throws Exception {
+        List<String> urlList = new ArrayList<>();
+        urlList.add("https://www.youtube.com/watch?v=eDqfg_LexCQ");
+        urlList.add("https://www.youtube.com/watch?v=fE6XAeZfAsk");
+        FileUtils.writeLines(new File("a.txt"),urlList);
+        String[] args = new String[]{"--batch-file","a.txt"};
+        List<String> argList = Command.filterYtDlpArguments(args);
+        for (String url : urlList) {
+            argList.add(url);
+            Application.download(Command.toArray(argList));
+        }
+    }
+
+    /**
      * 使用所有功能，用于生成编译用的配置文件
      * @throws Exception
      */
@@ -214,6 +230,7 @@ public class RunAllFeatForConfig {
         playlist();
         version();
         ignoreWarnLog();
+        batchFile();
         log.info("end");
         System.exit(0);
     }

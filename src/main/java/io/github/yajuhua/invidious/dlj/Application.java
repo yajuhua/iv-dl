@@ -7,18 +7,21 @@ import com.google.gson.Gson;
 import io.github.yajuhua.invidious.dlj.command.Command;
 import io.github.yajuhua.invidious.dlj.compiler.RunAllFeatForConfig;
 import io.github.yajuhua.invidious.dlj.pojo.Video;
+import io.github.yajuhua.invidious.dlj.utils.FileUtils;
 import io.github.yajuhua.invidious.wrapper.Invidious;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.net.Proxy;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class Application {
@@ -46,6 +49,18 @@ public class Application {
      */
     public static void main(String[] args) throws Exception {
 
+        /**
+         * 打印帮助
+         */
+        if (Command.toList(args).contains("--help") || Command.toList(args).contains("-h")){
+            Command.printHelp();
+            return;
+        }
+
+        //yt-dlp路径
+        String ytDlpPath = Command.YtDlpPath(args);
+        System.setProperty("yt-dlp",ytDlpPath);
+
         //执行测试代码
         if (Command.toList(args).contains("--test")){
             RunAllFeatForConfig.run();
@@ -57,22 +72,65 @@ public class Application {
             return;
         }
 
+        //打印各种调试信息
         if (Command.hasVerbose(args)){
-            //打印各种调试信息
             printVerbose();
         }
 
+        //设置为error级别日志
         if (Command.isIgnoreWarnLog(args)){
-            //设置为error级别日志
             ignoreWarnLog = true;
             setLogLevel(Level.ERROR);
         }
 
         log.debug(Arrays.toString(args));
 
-        //校验和过滤参数
-        List<String> argList = Command.filterYtDlpArguments(args);
+        //批量下载
+        if (Command.hasBatchFile(args)){
+            //获取批量下载文件中的链接，如果有的话
+            List<String> urlList;
+            File batchFile = Command.getBatchFile(args);
+            if (batchFile.exists()){
+                urlList = FileUtils.readLines(batchFile,"UTF-8");
+            }else {
+                throw new Exception("找不到文件: " + batchFile);
+            }
 
+            //过滤不合法的链接
+            urlList = urlList.stream().filter(new Predicate<String>() {
+                @Override
+                public boolean test(String s) {
+                    try {
+                        new URL(s);
+                        return true;
+                    } catch (Exception e) {
+                        return false;
+                    }
+                }
+            }).collect(Collectors.toList());
+
+            for (String url : urlList) {
+                //校验和过滤参数
+                List<String> argList = Command.filterYtDlpArguments(args);
+                argList.add(url);
+                download(Command.toArray(argList));
+            }
+        }else {
+            //下载单个
+            List<String> argList = Command.filterYtDlpArguments(args);
+            String url = Command.getUrl(args);
+            argList.add(url);
+            download(Command.toArray(argList));
+        }
+    }
+
+    /**
+     * 下载
+     * @param args
+     * @throws Exception
+     */
+    public static void download(String[] args) throws Exception{
+        List<String> argList = Command.toList(args);
         //获取并设置代理
         Proxy proxy = Command.getProxy(args);
         if (proxy != null){
@@ -118,8 +176,12 @@ public class Application {
         System.out.println("[info] generate json file: " + tempJsonFile.getAbsolutePath());
         FileUtils.write(tempJsonFile,gson.toJson(videoList),"UTF-8");
 
+        //移除下载链接
+        argList.remove(argList.size() - 1);
+
         //执行cmd命令
-        argList.add(0,"yt-dlp");
+        String execFile = System.getProperty("yt-dlp");
+        argList.add(0,execFile);
         argList.add("--load-info-json");
         argList.add(tempJsonFile.getAbsolutePath());
 
@@ -144,7 +206,7 @@ public class Application {
                 }
             }
             int waitFor = process.waitFor();
-            if (waitFor != 0){
+            if (waitFor != 0) {
                 bre = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
                 while ((line = bre.readLine()) != null){
                     System.out.println(line);
@@ -152,7 +214,7 @@ public class Application {
             }
             System.out.println();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage());
         }finally {
             //清理临时文件
             if (tempJsonFile.exists()){
@@ -167,6 +229,7 @@ public class Application {
                 bre.close();
             }
         }
+
     }
 
     /**

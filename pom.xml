@@ -3,9 +3,9 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>io.github.yajuhua</groupId>
   <artifactId>iv-dl</artifactId>
-  <version>0.0.1</version>
+  <version>none</version>
   <name>${project.artifactId}</name>
-  <url>https://github.com/yajuhua/invidious-dlj</url>
+  <url>https://github.com/yajuhua/iv-dl</url>
   <description>invidious downloader</description>
 
   <properties>
@@ -77,15 +77,10 @@
     </dependency>
 
     <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-      <version>2.13.0</version>
-    </dependency>
-
-    <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
       <version>1.18.30</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 

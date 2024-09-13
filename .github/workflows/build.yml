@@ -62,11 +62,6 @@ on:
         required: true
         default: '23.0.2'
         type: string
-      artifacts-file:
-        description: 'artifacts-file'
-        required: true
-        default: '*'
-        type: string
 
 jobs:
   # 新标签
@@ -403,5 +398,7 @@ jobs:
           prerelease: ${{ inputs.prerelease }}
           title: "${{ env.RELEASE_TAG  }}"
           files: |
-            ${{ inputs.artifacts-file }}
+            artifacts/*/*.zip
+            artifacts/jar/iv-dl.jar
+            native-image-conf.zip
             
