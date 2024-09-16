@@ -131,7 +131,7 @@ public class RunAllFeatForConfig {
      * videos视频列表
      */
     public static void videos() throws Exception {
-        String url = "https://www.youtube.com/@RADWIMPS_official/videos";
+        String url = "https://www.youtube.com/@%E5%A4%A7%E8%80%B3%E6%9C%B5TV/videos";
         log.info("videos: {}",url);
         String[] args = new String[]{"-f","m4a","-v","--playlist-items","1",url};
         base(args);
@@ -151,7 +151,7 @@ public class RunAllFeatForConfig {
      * playlist
      */
     public static void playlist() throws Exception {
-        String url = "https://www.youtube.com/playlist?list=PLHFlHpPjgk706HnlcMIWvQe8puJDUeai8";
+        String url = "https://www.youtube.com/playlist?list=PLl7c-EB4E1jEzrX7MELjSoIUYvydNvaR9";
         log.info("playlist: {}",url);
         String[] args = new String[]{"-f","m4a","-v","--playlist-items","1",url};
         base(args);
