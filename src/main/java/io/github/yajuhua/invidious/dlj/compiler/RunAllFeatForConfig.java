@@ -121,7 +121,7 @@ public class RunAllFeatForConfig {
      * 下载单个视频
      */
     public static void video() throws Exception {
-        String url = "https://www.youtube.com/watch?v=_r6CgaFNAGg";
+        String url = "https://www.youtube.com/watch?v=YAXTn0E-Zgo";
         log.info("video: {}",url);
         String[] args = new String[]{"-f","m4a","-v",url};
         base(args);
@@ -151,7 +151,7 @@ public class RunAllFeatForConfig {
      * playlist
      */
     public static void playlist() throws Exception {
-        String url = "https://www.youtube.com/playlist?list=PLIKD2pVXF4VHEG_DSBTW_dZB2q6XH4VDb";
+        String url = "https://www.youtube.com/playlist?list=PL2--0pHsDaOZF3qtsuTekjMpNcT8C_SAE";
         log.info("playlist: {}",url);
         String[] args = new String[]{"-f","m4a","-v","--playlist-items","1",url};
         base(args);
@@ -186,7 +186,7 @@ public class RunAllFeatForConfig {
      * 忽略warn日志
      */
     public static void ignoreWarnLog() throws Exception {
-        String url = "https://www.youtube.com/watch?v=_r6CgaFNAGg";
+        String url = "https://www.youtube.com/watch?v=YAXTn0E-Zgo";
         log.info("ignoreWarnLog: {}",url);
         String[] args = new String[]{"-f","m4a","--no-warnings",url};
         base(args);
@@ -197,8 +197,8 @@ public class RunAllFeatForConfig {
      */
     public static void batchFile() throws Exception {
         List<String> urlList = new ArrayList<>();
-        urlList.add("https://www.youtube.com/watch?v=eDqfg_LexCQ");
-        urlList.add("https://www.youtube.com/watch?v=fE6XAeZfAsk");
+        urlList.add("https://www.youtube.com/watch?v=ChaWd2ZIDoM");
+        urlList.add("https://www.youtube.com/watch?v=l45Utq0kSpk");
         FileUtils.writeLines(new File("a.txt"),urlList);
         String[] args = new String[]{"--batch-file","a.txt"};
         CommandInfo parse = CommandLineParser.parse(args);
