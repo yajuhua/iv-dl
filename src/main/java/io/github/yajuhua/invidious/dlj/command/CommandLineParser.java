@@ -77,8 +77,10 @@ public class CommandLineParser {
 
        //去掉命令尾部的URL链接，如果有的话
         try {
-            new URL(argList.get(argList.size() - 1));
-            argList.remove(argList.size() - 1);//去掉尾部链接
+            if (!argList.isEmpty()) {
+                new URL(argList.get(argList.size() - 1));
+                argList.remove(argList.size() - 1);//去掉尾部链接
+            }
         } catch (MalformedURLException ignored) {
 
         }
