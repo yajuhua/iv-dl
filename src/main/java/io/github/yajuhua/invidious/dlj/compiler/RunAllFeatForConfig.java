@@ -121,7 +121,7 @@ public class RunAllFeatForConfig {
      * 下载单个视频
      */
     public static void video() throws Exception {
-        String url = "https://www.youtube.com/watch?v=fS2q-hZ-pyY";
+        String url = "https://www.youtube.com/watch?v=_r6CgaFNAGg";
         log.info("video: {}",url);
         String[] args = new String[]{"-f","m4a","-v",url};
         base(args);
@@ -186,7 +186,7 @@ public class RunAllFeatForConfig {
      * 忽略warn日志
      */
     public static void ignoreWarnLog() throws Exception {
-        String url = "https://www.youtube.com/watch?v=fS2q-hZ-pyY";
+        String url = "https://www.youtube.com/watch?v=_r6CgaFNAGg";
         log.info("ignoreWarnLog: {}",url);
         String[] args = new String[]{"-f","m4a","--no-warnings",url};
         base(args);
