@@ -74,6 +74,40 @@ public class RunAllFeatForConfig {
         //获取所有链接
         List<String> allUrl = CommandLineParser.getAllUrl(args);
 
+        //没有下载时，可能是输出yt-dlp版本信息之类的
+        if (allUrl.isEmpty()){
+            List<String> filter = parse.getFilter();
+            filter.add(0, parse.getOptions().ytDlpPath);
+            // 创建
+            Process process = Runtime.getRuntime().exec(CommandLineParser.toArray(filter));
+
+            // 启动进程
+            BufferedReader bri = null;//info
+            BufferedReader bre = null;//error
+            try {
+                String line;
+                bri = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+                while ((line = bri.readLine()) != null) {
+                    if (line.startsWith("[download]")) {
+                        // 使用回车符回到行首，覆盖上一行
+                        System.out.print("\r" + line);
+                    } else {
+                        // 打印其他信息
+                        System.out.println(line);
+                    }
+                }
+                int waitFor = process.waitFor();
+                if (waitFor != 0) {
+                    bre = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
+                    while ((line = bre.readLine()) != null){
+                        System.out.println(line);
+                    }
+                }
+            } catch (Exception e) {
+                log.error(e.getMessage());
+            }
+        }
+
         //获取自定义节目序号
         List<Integer> itemsNumbers = CommandLineParser.getSelectItemsNumbers(parse.getOptions());
 
