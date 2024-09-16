@@ -8,6 +8,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.Proxy;
 import java.net.URL;
 import java.util.*;
@@ -72,6 +73,14 @@ public class CommandLineParser {
                 //过滤
                 removeOptionFromArgs(argList,optionName,field);
             }
+        }
+
+       //去掉命令尾部的URL链接，如果有的话
+        try {
+            new URL(argList.get(argList.size() - 1));
+            argList.remove(argList.size() - 1);//去掉尾部链接
+        } catch (MalformedURLException ignored) {
+
         }
         return commandInfo;
     }
