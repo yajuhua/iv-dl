@@ -4,7 +4,9 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
 import com.google.gson.Gson;
-import io.github.yajuhua.invidious.dlj.command.Command;
+import io.github.yajuhua.invidious.dlj.command.CommandInfo;
+import io.github.yajuhua.invidious.dlj.command.CommandLineParser;
+import io.github.yajuhua.invidious.dlj.command.Options;
 import io.github.yajuhua.invidious.dlj.compiler.RunAllFeatForConfig;
 import io.github.yajuhua.invidious.dlj.pojo.Video;
 import io.github.yajuhua.invidious.dlj.utils.FileUtils;
@@ -13,15 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.net.Proxy;
-import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 @Slf4j
 public class Application {
@@ -49,102 +47,108 @@ public class Application {
      */
     public static void main(String[] args) throws Exception {
 
-        /**
-         * 打印帮助
-         */
-        if (Command.toList(args).contains("--help") || Command.toList(args).contains("-h")){
-            Command.printHelp();
+        //解析命令
+        CommandInfo parse = CommandLineParser.parse(args);
+
+        //打印帮助
+        Options options = parse.getOptions();
+        if (options.ivDlHelp){
+            System.out.println("--iv-dl-help            帮助");
+            System.out.println("--iv-dl-version         版本信息");
+            System.out.println("--yt-dlp-path           yt-dlp可执行文件路径");
             return;
         }
 
         //yt-dlp路径
-        String ytDlpPath = Command.YtDlpPath(args);
-        System.setProperty("yt-dlp",ytDlpPath);
+        System.setProperty("yt-dlp",options.ytDlpPath);
 
         //执行测试代码
-        if (Command.toList(args).contains("--test")){
+        if (options.test){
             RunAllFeatForConfig.run();
         }
 
         //打印版本信息
-        if (Command.hasVersion(args)){
+        if (options.ivDlVersion){
             printVersion();
             return;
         }
 
         //打印各种调试信息
-        if (Command.hasVerbose(args)){
+        if (options.verbose){
             printVerbose();
         }
 
         //设置为error级别日志
-        if (Command.isIgnoreWarnLog(args)){
+        if (options.noWarnings){
             ignoreWarnLog = true;
             setLogLevel(Level.ERROR);
         }
 
         log.debug(Arrays.toString(args));
 
-        //批量下载
-        if (Command.hasBatchFile(args)){
-            //获取批量下载文件中的链接，如果有的话
-            List<String> urlList;
-            File batchFile = Command.getBatchFile(args);
-            if (batchFile.exists()){
-                urlList = FileUtils.readLines(batchFile,"UTF-8");
-            }else {
-                throw new Exception("找不到文件: " + batchFile);
-            }
+        //设置代理
+        if (options.proxy != null){
+            Invidious.proxy = CommandLineParser.getProxy(args);
+        }
 
-            //过滤不合法的链接
-            urlList = urlList.stream().filter(new Predicate<String>() {
-                @Override
-                public boolean test(String s) {
-                    try {
-                        new URL(s);
-                        return true;
-                    } catch (Exception e) {
-                        return false;
+        //获取所有链接
+        List<String> allUrl = CommandLineParser.getAllUrl(args);
+
+        //获取自定义节目序号
+        List<Integer> itemsNumbers = CommandLineParser.getSelectItemsNumbers(parse.getOptions());
+
+
+        //没有下载时，可能是输出yt-dlp版本信息之类的
+        if (allUrl.isEmpty()){
+            List<String> filter = parse.getFilter();
+            filter.add(0, parse.getOptions().ytDlpPath);
+            // 创建
+            Process process = Runtime.getRuntime().exec(CommandLineParser.toArray(filter));
+
+            // 启动进程
+            BufferedReader bri = null;//info
+            BufferedReader bre = null;//error
+            try {
+                String line;
+                bri = new BufferedReader(new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8));
+                while ((line = bri.readLine()) != null) {
+                    if (line.startsWith("[download]")) {
+                        // 使用回车符回到行首，覆盖上一行
+                        System.out.print("\r" + line);
+                    } else {
+                        // 打印其他信息
+                        System.out.println(line);
                     }
                 }
-            }).collect(Collectors.toList());
-
-            for (String url : urlList) {
-                //校验和过滤参数
-                List<String> argList = Command.filterYtDlpArguments(args);
-                argList.add(url);
-                download(Command.toArray(argList));
+                int waitFor = process.waitFor();
+                if (waitFor != 0) {
+                    bre = new BufferedReader(new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8));
+                    while ((line = bre.readLine()) != null){
+                        System.out.println(line);
+                    }
+                }
+            } catch (Exception e) {
+                log.error(e.getMessage());
             }
-        }else {
-            //下载单个
-            List<String> argList = Command.filterYtDlpArguments(args);
-            String url = Command.getUrl(args);
-            argList.add(url);
-            download(Command.toArray(argList));
+        }
+
+        //开始下载
+        for (String url : allUrl) {
+            download(parse.getFilter(),url,itemsNumbers);
         }
     }
 
     /**
      * 下载
-     * @param args
+     * @param
      * @throws Exception
      */
-    public static void download(String[] args) throws Exception{
-        List<String> argList = Command.toList(args);
-        //获取并设置代理
-        Proxy proxy = Command.getProxy(args);
-        if (proxy != null){
-            Invidious.proxy = proxy;
-        }
+    public static void download(List<String> ytDlpOption,String url,List<Integer> selectItemsNumbers) throws Exception{
 
         //设置downloader
         Invidious.init(new CustomDownloader());
 
-        //获取自定义项目数,如果有的话
-        List<Integer> selectItemsNumbers = Command.getSelectItemsNumbers(args);
-
         //获取链接实例,如果链接是从实例复制出来的
-        String url = Command.getUrl(args);
         String instance = Info.getInvidiousInstanceFromUrl(url);
         Invidious.setApi(instance);
 
@@ -157,7 +161,7 @@ public class Application {
         } else if (url.contains("/streams")) {
             //直播列表
             videoList = Info.getStreams(url,selectItemsNumbers);
-        } else if (url.contains("/playlist?list=")) {
+        } else if (url.startsWith("https://www.youtube.com/playlist?list=")) {
             //playlist列表
             videoList = Info.getPlaylist(url,selectItemsNumbers);
         }else {
@@ -177,18 +181,17 @@ public class Application {
         FileUtils.write(tempJsonFile,gson.toJson(videoList),"UTF-8");
 
         //移除下载链接
-        argList.remove(argList.size() - 1);
 
         //执行cmd命令
         String execFile = System.getProperty("yt-dlp");
-        argList.add(0,execFile);
-        argList.add("--load-info-json");
-        argList.add(tempJsonFile.getAbsolutePath());
+        ytDlpOption.add(0,execFile);
+        ytDlpOption.add("--load-info-json");
+        ytDlpOption.add(tempJsonFile.getAbsolutePath());
 
-        log.debug("cmd: {}",argList.toString());
+        log.debug("cmd: {}",ytDlpOption.toString());
 
         // 创建
-        Process process = Runtime.getRuntime().exec(Command.toArray(argList));
+        Process process = Runtime.getRuntime().exec(CommandLineParser.toArray(ytDlpOption));
 
         // 启动进程
         BufferedReader bri = null;//info
